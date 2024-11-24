@@ -1,0 +1,17 @@
+@EndUserText.label: 'Service defination for Travel Draft'
+define service ZUI_TRAVEL_AJ_D {
+  expose ZC_TRAVEL_AY_D               as Travel;
+  expose ZC_BOOKING_AY_D              as Booking;
+  expose ZC_BKSUPP_AY_D               as BookingSup;
+  expose /DMO/I_SupplementCategory_VH as SupplementCategory;
+  expose /DMO/I_Customer_StdVH        as Passenger;
+  expose /DMO/I_Agency_StdVH          as TravelAgency;
+  expose /DMO/I_Carrier_StdVH         as Airline;
+  expose /DMO/I_Connection_StdVH      as FlightConnection;
+  expose /DMO/I_Flight_StdVH          as Flight;
+  expose /DMO/I_Airport_StdVH         as Airport;
+  expose /DMO/I_Overall_Status_VH     as OverallStatus;
+  expose /DMO/I_Booking_Status_VH     as BookingStatus;
+  expose I_CurrencyStdVH              as Currency;
+  expose I_CountryVH                  as Country;
+}

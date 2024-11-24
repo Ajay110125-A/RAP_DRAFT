@@ -1,0 +1,111 @@
+@Metadata.layer: #CORE
+@UI: {
+       headerInfo: {
+                    typeName: 'Travel',
+                    typeNamePlural: 'Travels',
+                    title: {
+                            type: #STANDARD,
+                            value: 'TravelId'
+                           }
+                   },
+       presentationVariant: [{ sortOrder: [{  by: 'TravelId', direction: #DESC }] }]
+      }
+
+annotate entity ZC_TRAVEL_AY_D with
+{
+
+  @UI.facet: [
+              {
+               id: 'Travel',
+               purpose: #STANDARD,
+               type:  #IDENTIFICATION_REFERENCE,
+               label: 'Travel',
+               position: 10
+              },
+              {
+                id: 'Booking',
+                purpose: #STANDARD,
+                type: #LINEITEM_REFERENCE,
+                label: 'Booking',
+                position: 20,
+                targetElement: '_Booking'
+              }
+             ]
+  @UI.hidden: true
+  TravelUUID;
+
+  @UI:{
+         lineItem: [{  position: 10, importance: #HIGH }],
+         selectionField: [{  position: 10 }],
+         identification: [{  position: 10, label: 'Travel ID'}]
+      }
+  TravelId;
+
+  @UI:{
+         lineItem: [{  position: 20, importance: #HIGH }],
+         selectionField: [{  position: 20 }],
+         identification: [{  position: 20 }]
+      }
+  AgencyId;
+
+  @UI:{
+         lineItem: [{  position: 30, importance: #HIGH }],
+         selectionField: [{  position: 30 }],
+         identification: [{  position: 30 }]
+      }
+  CustomerId;
+
+  @UI:{
+         lineItem: [{  position: 40, importance: #MEDIUM }],
+         identification: [{  position: 40 }]
+      }
+  BeginDate;
+
+  @UI:{
+         lineItem: [{  position: 50, importance: #MEDIUM }],
+         identification: [{  position: 50 }]
+      }
+  EndDate;
+
+  @UI:{
+         lineItem: [{  position: 60, importance: #MEDIUM }],
+         identification: [{  position: 60 }]
+      }
+  BookingFee;
+
+  @UI:{
+         lineItem: [{  position: 70, importance: #MEDIUM }],
+         identification: [{  position: 70 }]
+      }
+  TotalPrice;
+
+
+  //  CurrencyCode;
+  @UI:{
+         lineItem: [{  position: 80, importance: #MEDIUM }],
+         identification: [{  position: 80 }]
+      }
+  Description;
+
+  @UI:{
+         lineItem: [{  position: 90, importance: #MEDIUM }],
+         selectionField: [{  position: 40 }],
+         identification: [{  position: 90 }],
+         textArrangement: #TEXT_ONLY
+      }
+  OverallStatus;
+
+  @UI.hidden: true
+  OverallStatusText;
+
+  @UI.hidden: true
+  LocalLastChangedAt;
+
+  /* Associations */
+  //  _Agency;
+  //  _Booking;
+  //  _Currency;
+  //  _Customer;
+  //  _OverallStatus;
+
+}
