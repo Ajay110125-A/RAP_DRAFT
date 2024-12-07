@@ -62,6 +62,13 @@ define root view entity ZC_TRAVEL_AY_D
       Description,
 
       @ObjectModel.text.element: [ 'OverallStatusText' ]
+      @Consumption.valueHelpDefinition: [{
+                                            entity: {
+                                                      name: '/DMO/I_Overall_Status_VH',
+                                                      element: 'OverallStatus'
+                                                    },
+                                            useForValidation: true
+                                        }]
       OverallStatus,
       _OverallStatus._Text.Text as OverallStatusText : localized,
 

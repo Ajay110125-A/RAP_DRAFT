@@ -44,3 +44,4 @@ define root view entity ZI_TRAVEL_AY_D
       _Currency,
       _Booking
 }
+
