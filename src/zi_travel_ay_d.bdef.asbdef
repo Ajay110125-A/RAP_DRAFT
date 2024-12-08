@@ -5,14 +5,14 @@ define behavior for ZI_TRAVEL_AY_D alias _Travel
 implementation in class ZCL_BP_TRAVEL_AY_D unique
 persistent table zaj_travel_d
 lock master
-authorization master ( instance )
+authorization master ( instance, global )
 //etag master <field_name>
 {
   create;
   update;
   delete;
   field ( numbering : managed, readonly ) TravelUUID;
-  association _Booking { create; }
+  association _Booking { create ( authorization : update ); }
   mapping for zaj_travel_d
     {
       AgencyId           = agency_id;
@@ -46,7 +46,7 @@ authorization dependent by _Travel
   field ( numbering : managed, readonly ) BookingUUID;
   field ( readonly ) TravelUUID;
   association _Travel;
-  association _BookingSup { create; }
+  association _BookingSup { create ( authorization : update ); }
   mapping for zaj_booking_d
     {
       CarrierId          = carrier_id;
