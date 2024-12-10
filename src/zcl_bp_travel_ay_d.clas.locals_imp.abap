@@ -5,6 +5,11 @@ CLASS lhc__Travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
       IMPORTING keys REQUEST requested_authorizations FOR _Travel RESULT result.
     METHODS get_global_authorizations FOR GLOBAL AUTHORIZATION
       IMPORTING REQUEST requested_authorizations FOR _travel RESULT result.
+    METHODS precheck_create FOR PRECHECK
+      IMPORTING entities FOR CREATE _travel.
+
+    METHODS precheck_update FOR PRECHECK
+      IMPORTING entities FOR UPDATE _travel.
 
 ENDCLASS.
 
@@ -12,11 +17,140 @@ CLASS lhc__Travel IMPLEMENTATION.
 
   METHOD get_instance_authorizations.
 
+**********************************************************************
 
+*    IF CURD disabling and enabling based on the line items in Ui5 then we need to implement this method so that we can apply on every row using Key fields done below
+*    Here Check happens only using keys. And if to check should happen on user inputs then Pre check should be implemented
+**********************************************************************
+    DATA: l_delete LIKE if_abap_behv=>auth-allowed,
+          l_update LIKE if_abap_behv=>auth-allowed.
+
+
+    READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+       ENTITY _Travel
+       FIELDS ( AgencyId )
+       WITH CORRESPONDING #( keys )
+       RESULT DATA(lt_travels)
+       FAILED DATA(lt_failed).
+
+    CHECK lt_travels IS NOT INITIAL.
+
+    SELECT
+      FROM zaj_travel_d AS t
+      INNER JOIN /dmo/agency AS a
+      ON t~agency_id = a~agency_id
+      FIELDS t~travel_uuid, t~agency_id, a~country_code
+      FOR ALL ENTRIES IN @lt_travels
+      WHERE t~travel_uuid = @lt_travels-%key-TravelUUID
+      INTO TABLE @DATA(lt_agency_city).
+
+    LOOP AT lt_travels INTO DATA(lwa_travels).
+
+      READ TABLE lt_agency_city ASSIGNING FIELD-SYMBOL(<fs_age_cnty>) WITH KEY travel_uuid = lwa_travels-%key-TravelUUID.
+      IF sy-subrc EQ 0.
+
+        IF requested_authorizations-%update = if_abap_behv=>mk-on.
+
+*          AUTHORITY-CHECK OBJECT '/DMO/TRVL'
+*          ID '/DMO/CNTRY' FIELD <fs_age_cnty>-country_code
+*          ID 'ACTVT' FIELD  '02'.
+*
+*          l_update = COND #(
+*                                   WHEN sy-subrc EQ 0 THEN if_abap_behv=>auth-allowed
+*                                    ELSE if_abap_behv=>auth-unauthorized
+*                                 ).
+*          IF l_update EQ if_abap_behv=>auth-unauthorized.
+*
+**            failed-_travel = VALUE #(
+**                                      (
+**                                       %tky     = lwa_travels-%tky
+***                                       %update  = if_abap_behv=>mk-on
+**                                      )
+**                                    ).
+*
+*            reported-_travel = VALUE #( BASE reported-_travel
+*                                         (
+*                                           %tky = lwa_travels-%tky
+*                                           %msg = NEW /dmo/cm_flight_messages(
+*                                                                                textid    = /dmo/cm_flight_messages=>not_authorized_for_agencyid
+*                                                                                agency_id = lwa_travels-%data-AgencyId
+*                                                                                severity  = if_abap_behv_message=>severity-error
+*                                                                             )
+*                                           %element-agencyid = if_abap_behv=>mk-on
+*                                         )
+*
+*                                      ).
+*
+*          ENDIF.
+
+        ENDIF.
+
+        IF requested_authorizations-%delete = if_abap_behv=>mk-on.
+
+*          AUTHORITY-CHECK OBJECT '/DMO/TRAVL'
+*             ID '/DMO/CNTRY' FIELD <fs_age_cnty>-country_code
+*             ID 'ACTVT' FIELD  '06'.
+*
+*          l_delete = COND #(
+*                                    WHEN sy-subrc EQ 0 THEN if_abap_behv=>auth-allowed
+*                                     ELSE if_abap_behv=>auth-unauthorized
+*                                 ).
+*
+*          IF l_delete EQ if_abap_behv=>auth-unauthorized.
+*
+**            failed-_travel = VALUE #(                                     (
+**                                       %tky     = lwa_travels-%tky
+***                                       %delete  = if_abap_behv=>mk-on
+**                                      )
+**                                    ).
+*
+*            reported-_travel = VALUE #( BASE reported-_travel
+*                                         (
+*                                           %tky = lwa_travels-%tky
+*                                           %msg = NEW /dmo/cm_flight_messages(
+*                                                                                textid    = /dmo/cm_flight_messages=>not_authorized_for_agencyid
+*                                                                                agency_id = lwa_travels-%data-AgencyId
+*                                                                                severity  = if_abap_behv_message=>severity-error
+*                                                                             )
+*                                           %element-agencyid = if_abap_behv=>mk-on
+*                                         )
+*
+*                                      ).
+*
+*          ENDIF.
+
+        ENDIF.
+
+
+
+      ENDIF.
+
+      result = VALUE #(
+                        BASE result
+                        (
+                          TravelUUID = lwa_travels-%key-TravelUUID
+                          %update = l_update
+                          %delete = l_delete
+
+                        )
+                      ).
+
+      CLEAR : l_delete, l_update.
+
+    ENDLOOP.
 
   ENDMETHOD.
 
   METHOD get_global_authorizations.
+
+    "This code is commented because For Auth Check BTP Trial account user doesn't have auth to add authorization for any values. And user won't be able o edit or update or create any data.
+    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+**********************************************************************
+
+*    This method is used for global disabling of CURD Operation. Means it user fails Auth Check here that user won't be able to do any CURD operation.
+*    To enable or disable CURD operation for particular line item then we need to another method get_instance_authorizations.
+
+**********************************************************************
 
 *    IF requested_authorizations-%create = if_abap_behv=>mk-on.
 *
@@ -36,6 +170,7 @@ CLASS lhc__Travel IMPLEMENTATION.
 *          ID '/DMO/CNTRY' DUMMY
 *          ID 'ACTVT' FIELD  '02'.
 *
+
 *      result-%update = COND #(
 *                                 WHEN sy-subrc EQ 0 THEN if_abap_behv=>auth-allowed
 *                                 ELSE if_abap_behv=>auth-unauthorized
@@ -54,6 +189,81 @@ CLASS lhc__Travel IMPLEMENTATION.
 *                              ).
 *
 *    ENDIF.
+
+
+  ENDMETHOD.
+
+  METHOD precheck_create.
+
+**********************************************************************
+*    This method to validate the incoming values from users which creting a travwel
+**********************************************************************
+
+  ENDMETHOD.
+
+  METHOD precheck_update.
+**********************************************************************
+*    This Pre-Check is done only for Agency ID, this code works only if users changes the agency ID using Ui5. This method can be used for all values users changes at UI5.
+**********************************************************************
+
+    DATA : lt_agencyids TYPE SORTED TABLE OF /dmo/agency WITH UNIQUE KEY agency_id.
+
+    lt_agencyids = CORRESPONDING #( entities MAPPING  agency_id = AgencyId EXCEPT * ).
+
+    CHECK lt_agencyids IS NOT INITIAL.
+
+    SELECT
+        FROM /dmo/agency
+        FIELDS agency_id, country_code
+        FOR ALL ENTRIES IN @lt_agencyids
+        WHERE agency_id = @lt_agencyids-agency_id
+        INTO TABLE @DATA(lt_agency).
+    IF sy-subrc EQ 0.
+
+      LOOP AT entities ASSIGNING FIELD-SYMBOL(<fs_entity>).
+
+        READ TABLE lt_agency ASSIGNING FIELD-SYMBOL(<fs_agency>) WITH KEY agency_id = <fs_entity>-%data-AgencyId.
+
+
+        AUTHORITY-CHECK OBJECT '/DMO/TRAVl'
+           ID '/DMO/CNTRY' FIELD <fs_agency>-country_code
+           ID 'ACTVT' FIELD  '06'.
+        IF sy-subrc NE 0.
+
+            failed-_travel = VALUE #(
+                                      BASE failed-_travel
+                                      ( %tky = <fs_entity>-%tky )
+                                    ).
+
+            reported-_travel = VALUE #(
+                                        BASE  reported-_travel
+                                        (
+                                          %tky = <fs_entity>-%tky
+                                          %msg = NEW /dmo/cm_flight_messages(
+                                                                                textid                = /dmo/cm_flight_messages=>not_authorized_for_agencyid
+                                                                                agency_id             = <fs_entity>-%data-AgencyId
+                                                                                severity              = if_abap_behv_message=>severity-error
+                                                                            )
+                                        %element-%field-AgencyId = if_abap_behv=>mk-on
+                                        )
+                                      ).
+
+        ENDIF.
+
+
+      ENDLOOP.
+
+    ENDIF.
+
+
+
+
+
+
+
+
+
+
 
 
   ENDMETHOD.
