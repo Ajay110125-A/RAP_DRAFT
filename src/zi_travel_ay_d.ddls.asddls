@@ -3,7 +3,9 @@
 @Metadata.ignorePropagatedAnnotations: true
 define root view entity ZI_TRAVEL_AY_D
   as select from zaj_travel_d as _Travel
+  
   composition [1..*] of ZI_BOOKING_AY_D          as _Booking
+  
   association [0..1] to /DMO/I_Agency            as _Agency        on _Travel.agency_id = _Agency.AgencyID
   association [0..1] to /DMO/I_Customer          as _Customer      on _Travel.customer_id = _Customer.CustomerID
   association [0..1] to /DMO/I_Overall_Status_VH as _OverallStatus on _Travel.overall_status = _OverallStatus.OverallStatus
@@ -11,6 +13,7 @@ define root view entity ZI_TRAVEL_AY_D
 {
 
   key travel_uuid           as TravelUUID,
+  
       travel_id             as TravelId,
       agency_id             as AgencyId,
       customer_id           as CustomerId,

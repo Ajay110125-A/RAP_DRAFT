@@ -3,8 +3,10 @@
 @Metadata.ignorePropagatedAnnotations: true
 define view entity ZI_BOOKING_AY_D
   as select from zaj_booking_d as _Booking
-  composition [1..*] of ZI_BKSUPP_AY_D           as _BookingSup
+
   association        to parent ZI_TRAVEL_AY_D           as _Travel on  $projection.TravelUUID = _Travel.TravelUUID
+  composition [0..*] of ZI_BKSUPP_AY_D           as _BookingSup
+  
   association [1..1] to /DMO/I_Customer          as _Customer      on  _Booking.customer_id = _Customer.CustomerID
   association [1..1] to /DMO/I_Carrier           as _Carrier       on  _Booking.carrier_id = _Carrier.AirlineID
   association [1..1] to /DMO/I_Connection        as _Connection    on  _Booking.carrier_id    = _Connection.AirlineID

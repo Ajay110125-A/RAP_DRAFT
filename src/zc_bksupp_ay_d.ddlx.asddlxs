@@ -2,8 +2,8 @@
 
 @UI:{
       headerInfo: {
-                   typeName: 'Booking Supplement',
-                   typeNamePlural: 'Booking Supplements',
+                   typeName: 'Booking Supplement Details',
+                   typeNamePlural: 'Booking Supplement List',
                    title: {
                             type: #STANDARD,
                             value: 'BookingSupplementId'

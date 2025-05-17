@@ -2,8 +2,8 @@
 
 @UI:{
       headerInfo: {
-                   typeName: 'Booking',
-                   typeNamePlural: 'Bookings',
+                   typeName: 'Booking Details',
+                   typeNamePlural: 'Bookings List',
                    title: {
                             type: #STANDARD,
                             value: 'BookingId'
@@ -26,7 +26,7 @@ annotate entity ZC_BOOKING_AY_D with
                 id: 'BookingSupplement',
                 purpose: #STANDARD,
                 position: 20,
-                label: 'Booking Supplement',
+                label: 'Booking Supplement List',
                 type: #LINEITEM_REFERENCE,
                 targetElement: '_BookingSup'
               }

@@ -1,7 +1,7 @@
 @Metadata.layer: #CORE
 @UI: {
        headerInfo: {
-                    typeName: 'Travel',
+                    typeName: 'Travel Details',
                     typeNamePlural: 'Travels',
                     title: {
                             type: #STANDARD,
@@ -26,7 +26,7 @@ annotate entity ZC_TRAVEL_AY_D with
                 id: 'Booking',
                 purpose: #STANDARD,
                 type: #LINEITEM_REFERENCE,
-                label: 'Booking',
+                label: 'Bookings List',
                 position: 20,
                 targetElement: '_Booking'
               }
