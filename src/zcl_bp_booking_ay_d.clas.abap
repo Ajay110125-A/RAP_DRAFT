@@ -1,5 +1,9 @@
 CLASS zcl_bp_booking_ay_d DEFINITION PUBLIC ABSTRACT FINAL FOR BEHAVIOR OF zi_travel_ay_d.
+protected section.
+private section.
 ENDCLASS.
 
-CLASS zcl_bp_booking_ay_d IMPLEMENTATION.
+
+
+CLASS ZCL_BP_BOOKING_AY_D IMPLEMENTATION.
 ENDCLASS.
