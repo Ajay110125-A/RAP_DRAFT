@@ -31,7 +31,7 @@ CLASS lhc__Travel IMPLEMENTATION.
        FIELDS ( AgencyId )
        WITH CORRESPONDING #( keys )
        RESULT DATA(lt_travels)
-       FAILED DATA(lt_failed).
+       FAILED failed.
 
     CHECK lt_travels IS NOT INITIAL.
 
@@ -51,73 +51,74 @@ CLASS lhc__Travel IMPLEMENTATION.
 
         IF requested_authorizations-%update = if_abap_behv=>mk-on.
 
-*          AUTHORITY-CHECK OBJECT '/DMO/TRVL'
-*          ID '/DMO/CNTRY' FIELD <fs_age_cnty>-country_code
-*          ID 'ACTVT' FIELD  '02'.
-*
-*          l_update = COND #(
-*                                   WHEN sy-subrc EQ 0 THEN if_abap_behv=>auth-allowed
-*                                    ELSE if_abap_behv=>auth-unauthorized
-*                                 ).
-*          IF l_update EQ if_abap_behv=>auth-unauthorized.
-*
-**            failed-_travel = VALUE #(
-**                                      (
-**                                       %tky     = lwa_travels-%tky
-***                                       %update  = if_abap_behv=>mk-on
-**                                      )
-**                                    ).
-*
-*            reported-_travel = VALUE #( BASE reported-_travel
-*                                         (
-*                                           %tky = lwa_travels-%tky
-*                                           %msg = NEW /dmo/cm_flight_messages(
-*                                                                                textid    = /dmo/cm_flight_messages=>not_authorized_for_agencyid
-*                                                                                agency_id = lwa_travels-%data-AgencyId
-*                                                                                severity  = if_abap_behv_message=>severity-error
-*                                                                             )
-*                                           %element-agencyid = if_abap_behv=>mk-on
-*                                         )
-*
-*                                      ).
-*
-*          ENDIF.
+          AUTHORITY-CHECK OBJECT '/DMO/TRAVL'
+          ID '/DMO/CNTRY' FIELD <fs_age_cnty>-country_code
+          ID 'ACTVT' FIELD  '02'.
+
+          l_update = COND #(
+                                   WHEN sy-subrc EQ 0 THEN if_abap_behv=>auth-allowed
+                                    ELSE if_abap_behv=>auth-unauthorized
+                                 ).
+          IF l_update EQ if_abap_behv=>auth-unauthorized.
+
+            failed-_travel = VALUE #( BASE failed-_travel
+                                      (
+                                       %tky     = lwa_travels-%tky
+                                       %update  = if_abap_behv=>mk-on
+                                      )
+                                    ).
+
+            reported-_travel = VALUE #( BASE reported-_travel
+                                         (
+                                           %tky = lwa_travels-%tky
+                                           %msg = NEW /dmo/cm_flight_messages(
+                                                                                textid    = /dmo/cm_flight_messages=>not_authorized_for_agencyid
+                                                                                agency_id = lwa_travels-%data-AgencyId
+                                                                                severity  = if_abap_behv_message=>severity-error
+                                                                             )
+                                           %element-agencyid = if_abap_behv=>mk-on
+                                         )
+
+                                      ).
+
+          ENDIF.
 
         ENDIF.
 
         IF requested_authorizations-%delete = if_abap_behv=>mk-on.
 
-*          AUTHORITY-CHECK OBJECT '/DMO/TRAVL'
-*             ID '/DMO/CNTRY' FIELD <fs_age_cnty>-country_code
-*             ID 'ACTVT' FIELD  '06'.
-*
-*          l_delete = COND #(
-*                                    WHEN sy-subrc EQ 0 THEN if_abap_behv=>auth-allowed
-*                                     ELSE if_abap_behv=>auth-unauthorized
-*                                 ).
-*
-*          IF l_delete EQ if_abap_behv=>auth-unauthorized.
-*
-**            failed-_travel = VALUE #(                                     (
-**                                       %tky     = lwa_travels-%tky
-***                                       %delete  = if_abap_behv=>mk-on
-**                                      )
-**                                    ).
-*
-*            reported-_travel = VALUE #( BASE reported-_travel
-*                                         (
-*                                           %tky = lwa_travels-%tky
-*                                           %msg = NEW /dmo/cm_flight_messages(
-*                                                                                textid    = /dmo/cm_flight_messages=>not_authorized_for_agencyid
-*                                                                                agency_id = lwa_travels-%data-AgencyId
-*                                                                                severity  = if_abap_behv_message=>severity-error
-*                                                                             )
-*                                           %element-agencyid = if_abap_behv=>mk-on
-*                                         )
-*
-*                                      ).
-*
-*          ENDIF.
+          AUTHORITY-CHECK OBJECT '/DMO/TRAVL'
+             ID '/DMO/CNTRY' FIELD <fs_age_cnty>-country_code
+             ID 'ACTVT' FIELD  '06'.
+
+          l_delete = COND #(
+                                    WHEN sy-subrc EQ 0 THEN if_abap_behv=>auth-allowed
+                                     ELSE if_abap_behv=>auth-unauthorized
+                                 ).
+
+          IF l_delete EQ if_abap_behv=>auth-unauthorized.
+
+            failed-_travel = VALUE #(  BASE failed-_travel
+                                     (
+                                       %tky     = lwa_travels-%tky
+                                       %delete  = if_abap_behv=>mk-on
+                                      )
+                                    ).
+
+            reported-_travel = VALUE #( BASE reported-_travel
+                                         (
+                                           %tky = lwa_travels-%tky
+                                           %msg = NEW /dmo/cm_flight_messages(
+                                                                                textid    = /dmo/cm_flight_messages=>not_authorized_for_agencyid
+                                                                                agency_id = lwa_travels-%data-AgencyId
+                                                                                severity  = if_abap_behv_message=>severity-error
+                                                                             )
+                                           %element-agencyid = if_abap_behv=>mk-on
+                                         )
+
+                                      ).
+
+          ENDIF.
 
         ENDIF.
 
@@ -129,8 +130,8 @@ CLASS lhc__Travel IMPLEMENTATION.
                         BASE result
                         (
                           TravelUUID = lwa_travels-%key-TravelUUID
-                          %update = l_update
-                          %delete = l_delete
+                          %update = CONV #( '01' ) "l_update
+                          %delete = CONV #( '01' ) "l_delete
 
                         )
                       ).
@@ -170,7 +171,7 @@ CLASS lhc__Travel IMPLEMENTATION.
 *          ID '/DMO/CNTRY' DUMMY
 *          ID 'ACTVT' FIELD  '02'.
 *
-
+*
 *      result-%update = COND #(
 *                                 WHEN sy-subrc EQ 0 THEN if_abap_behv=>auth-allowed
 *                                 ELSE if_abap_behv=>auth-unauthorized
@@ -188,6 +189,7 @@ CLASS lhc__Travel IMPLEMENTATION.
 *                                 ELSE if_abap_behv=>auth-unauthorized
 *                              ).
 *
+*
 *    ENDIF.
 
 
@@ -196,7 +198,7 @@ CLASS lhc__Travel IMPLEMENTATION.
   METHOD precheck_create.
 
 **********************************************************************
-*    This method to validate the incoming values from users which creting a travwel
+*    This method to validate the incoming values from users which creating a travel
 **********************************************************************
 
   ENDMETHOD.
@@ -230,23 +232,23 @@ CLASS lhc__Travel IMPLEMENTATION.
            ID 'ACTVT' FIELD  '06'.
         IF sy-subrc NE 0.
 
-            failed-_travel = VALUE #(
-                                      BASE failed-_travel
-                                      ( %tky = <fs_entity>-%tky )
-                                    ).
+          failed-_travel = VALUE #(
+                                    BASE failed-_travel
+                                    ( %tky = <fs_entity>-%tky )
+                                  ).
 
-            reported-_travel = VALUE #(
-                                        BASE  reported-_travel
-                                        (
-                                          %tky = <fs_entity>-%tky
-                                          %msg = NEW /dmo/cm_flight_messages(
-                                                                                textid                = /dmo/cm_flight_messages=>not_authorized_for_agencyid
-                                                                                agency_id             = <fs_entity>-%data-AgencyId
-                                                                                severity              = if_abap_behv_message=>severity-error
-                                                                            )
-                                        %element-%field-AgencyId = if_abap_behv=>mk-on
-                                        )
-                                      ).
+          reported-_travel = VALUE #(
+                                      BASE  reported-_travel
+                                      (
+                                        %tky = <fs_entity>-%tky
+                                        %msg = NEW /dmo/cm_flight_messages(
+                                                                              textid                = /dmo/cm_flight_messages=>not_authorized_for_agencyid
+                                                                              agency_id             = <fs_entity>-%data-AgencyId
+                                                                              severity              = if_abap_behv_message=>severity-error
+                                                                          )
+                                      %element-%field-AgencyId = if_abap_behv=>mk-on
+                                      )
+                                    ).
 
         ENDIF.
 
