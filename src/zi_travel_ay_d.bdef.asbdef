@@ -13,6 +13,13 @@ authorization master ( instance, global )
   delete;
   field ( numbering : managed, readonly ) TravelUUID;
   association _Booking { create ( authorization : update ); }
+
+  action( authorization : update ) acceptTravel result [1] $self;
+  action( authorization : update ) rejectTravel result [1] $self;
+  action( authorization : update ) discount parameter ZAJ_DEDUCT_DISCOUNT result[1] $self;
+
+  internal action reCalTotalPrice;
+
   mapping for zaj_travel_d
     {
       AgencyId           = agency_id;

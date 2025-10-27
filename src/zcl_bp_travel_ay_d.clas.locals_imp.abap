@@ -10,6 +10,16 @@ CLASS lhc__Travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
 
     METHODS precheck_update FOR PRECHECK
       IMPORTING entities FOR UPDATE _travel.
+    METHODS accepttravel FOR MODIFY
+      IMPORTING keys FOR ACTION _travel~accepttravel RESULT result.
+
+    METHODS discount FOR MODIFY
+      IMPORTING keys FOR ACTION _travel~discount RESULT result.
+
+    METHODS rejecttravel FOR MODIFY
+      IMPORTING keys FOR ACTION _travel~rejecttravel RESULT result.
+    METHODS recaltotalprice FOR MODIFY
+      IMPORTING keys FOR ACTION _travel~recaltotalprice.
 
 ENDCLASS.
 
@@ -258,16 +268,88 @@ CLASS lhc__Travel IMPLEMENTATION.
     ENDIF.
 
 
+  ENDMETHOD.
+
+  METHOD acceptTravel.
+  ENDMETHOD.
+
+  METHOD discount.
+
+    DATA(lt_keys) = keys.
+
+    LOOP AT lt_keys ASSIGNING FIELD-SYMBOL(<fs_keys>) WHERE %param-discount IS INITIAL
+                                                         OR %param-discount NOT BETWEEN 1 AND 100.
+
+      APPEND VALUE #( %tky = <fs_keys>-%tky ) TO failed-_travel.
+      APPEND VALUE #(
+                      %tky = <fs_keys>-%tky
+                      %msg = NEW /dmo/cm_flight_messages(
+                                    textid                = /dmo/cm_flight_messages=>discount_invalid
+                                    severity              = if_abap_behv_message=>severity-error
+                                  )
+                      %element-bookingfee = if_abap_behv=>mk-on
+                      %action-discount    = if_abap_behv=>mk-on
+
+                    ) TO reported-_travel.
+
+    ENDLOOP.
+
+    DELETE lt_keys WHERE %param-discount IS INITIAL OR %param-discount NOT BETWEEN 1 AND 100.
+
+    CHECK lt_keys IS NOT INITIAL.
+
+    READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+     ENTITY _Travel
+     FIELDS ( BookingFee )
+     WITH CORRESPONDING #( lt_keys )
+     RESULT DATA(lt_travel).
+
+    DATA : l_dis_val TYPE decfloat16,
+           lt_travel_new TYPE TABLE FOR UPDATE zi_travel_ay_d.
+
+    LOOP AT lt_travel ASSIGNING FIELD-SYMBOL(<fs_travel>).
+
+        CLEAR l_dis_val.
+
+        DATA(l_discount) = lt_keys[ KEY id %tky = <fs_travel>-%tky ]-%param-discount.
+
+        l_dis_val = <fs_travel>-BookingFee * ( l_discount / 100 ).
+
+        <fs_travel>-BookingFee -= l_dis_val.
+
+        lt_travel_new = VALUE #(
+                                ( CORRESPONDING #( <fs_travel> ) )
+                               ).
+
+    ENDLOOP.
+
+    MODIFY ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+     ENTITY _Travel
+     UPDATE FIELDS ( BookingFee )
+     WITH lt_travel_new.
+
+    READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+     ENTITY _Travel
+     ALL FIELDS WITH CORRESPONDING #( lt_keys )
+     RESULT DATA(lt_updated_Travel).
+
+   result = VALUE #(
+                     FOR lwa_travel IN lt_updated_travel
+                        (
+                          %tky = lwa_travel-%tky
+                          %param = lwa_travel
+                        )
+                   ).
 
 
 
 
+  ENDMETHOD.
 
+  METHOD rejectTravel.
+  ENDMETHOD.
 
-
-
-
-
+  METHOD reCalTotalPrice.
   ENDMETHOD.
 
 ENDCLASS.

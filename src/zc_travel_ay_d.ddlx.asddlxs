@@ -35,9 +35,15 @@ annotate entity ZC_TRAVEL_AY_D with
   TravelUUID;
 
   @UI:{
-         lineItem: [{  position: 10, importance: #HIGH }],
+         lineItem: [
+                    { position: 10, importance: #HIGH },
+                    { type: #FOR_ACTION, dataAction: 'discount', label: 'Discount' }
+                   ],
          selectionField: [{  position: 10 }],
-         identification: [{  position: 10, label: 'Travel ID'}]
+         identification: [
+                          {  position: 10, label: 'Travel ID'},
+                          { type: #FOR_ACTION, dataAction: 'discount', label: 'Discount' }
+                         ]
       }
   TravelId;
 
