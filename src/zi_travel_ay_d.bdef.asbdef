@@ -41,9 +41,12 @@ authorization master ( instance, global )
       TravelId           = travel_id;
     }
 
-  determination setTravelId on save { create; update; }
+  determination setTravelId on save { create; }
   determination setStatus on modify { create; update; }
   determination calTotalPrice on modify { create; field BookingFee, CurrencyCode; }
+
+  side effects { field BookingFee affects field TotalPrice; }
+
 }
 
 define behavior for ZI_BOOKING_AY_D alias _Booking
@@ -55,10 +58,13 @@ authorization dependent by _Travel
 {
   update;
   delete;
+
   field ( numbering : managed, readonly ) BookingUUID;
-  field ( readonly ) TravelUUID;
+  field ( readonly ) TravelUUID, BookingId, BookingDate;
+
   association _Travel;
   association _BookingSup { create ( authorization : update ); }
+
   mapping for zaj_booking_d
     {
       CarrierId          = carrier_id;
@@ -74,6 +80,11 @@ authorization dependent by _Travel
       LocalLastChangedAt = local_last_changed_at;
       TravelUUID         = parent_uuid;
     }
+
+  determination setBookingId   on save { create; }
+  determination setBookingDate on save { create; }
+  determination calTotalPrice  on modify { create; field FlightPrice, CurrencyCode; }
+
 }
 
 define behavior for ZI_BKSUPP_AY_D alias _BookingSup
