@@ -8,15 +8,16 @@ lock master
 authorization master ( instance, global )
 //etag master <field_name>
 {
-  create(precheck);
-  update(precheck);
+  create ( precheck );
+  update ( precheck );
   delete;
   field ( numbering : managed, readonly ) TravelUUID;
+  field ( readonly ) TravelId, OverallStatus;
   association _Booking { create ( authorization : update ); }
 
-  action( authorization : update ) acceptTravel result [1] $self;
-  action( authorization : update ) rejectTravel result [1] $self;
-  action( authorization : update ) discount parameter ZAJ_DEDUCT_DISCOUNT result[1] $self;
+  action ( authorization : update ) acceptTravel result [1] $self;
+  action ( authorization : update ) rejectTravel result [1] $self;
+  action ( authorization : update ) discount parameter ZAJ_DEDUCT_DISCOUNT result [1] $self;
 
   internal action reCalTotalPrice;
 
@@ -39,6 +40,10 @@ authorization master ( instance, global )
       TravelUUID         = travel_uuid;
       TravelId           = travel_id;
     }
+
+  determination setTravelId on save { create; update; }
+  determination setStatus on modify { create; update; }
+  determination calTotalPrice on modify { create; field BookingFee, CurrencyCode; }
 }
 
 define behavior for ZI_BOOKING_AY_D alias _Booking

@@ -20,6 +20,14 @@ CLASS lhc__Travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
       IMPORTING keys FOR ACTION _travel~rejecttravel RESULT result.
     METHODS recaltotalprice FOR MODIFY
       IMPORTING keys FOR ACTION _travel~recaltotalprice.
+    METHODS caltotalprice FOR DETERMINE ON MODIFY
+      IMPORTING keys FOR _travel~caltotalprice.
+
+    METHODS setstatus FOR DETERMINE ON MODIFY
+      IMPORTING keys FOR _travel~setstatus.
+
+    METHODS settravelid FOR DETERMINE ON SAVE
+      IMPORTING keys FOR _travel~settravelid.
 
 ENDCLASS.
 
@@ -271,6 +279,33 @@ CLASS lhc__Travel IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD acceptTravel.
+
+    MODIFY ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+     ENTITY _Travel
+     UPDATE FIELDS ( OverallStatus )
+     WITH VALUE #(
+                    FOR lwa_keys IN keys
+                    (
+                     %tky = lwa_keys-%tky
+                     OverallStatus = 'A'
+                    )
+                 ).
+
+    READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+     ENTITY _Travel
+     ALL FIELDS WITH CORRESPONDING #( keys )
+     RESULT DATA(lt_travels).
+
+    result = VALUE #(
+                      FOR lwa_travels IN lt_travels
+                      (
+                         %tky = lwa_travels-%tky
+                         %param = lwa_travels
+                      )
+                    ).
+
+
+
   ENDMETHOD.
 
   METHOD discount.
@@ -304,22 +339,20 @@ CLASS lhc__Travel IMPLEMENTATION.
      WITH CORRESPONDING #( lt_keys )
      RESULT DATA(lt_travel).
 
-    DATA : l_dis_val TYPE decfloat16,
+    DATA : l_dis_val     TYPE decfloat16,
            lt_travel_new TYPE TABLE FOR UPDATE zi_travel_ay_d.
 
     LOOP AT lt_travel ASSIGNING FIELD-SYMBOL(<fs_travel>).
 
-        CLEAR l_dis_val.
+      CLEAR l_dis_val.
 
-        DATA(l_discount) = lt_keys[ KEY id %tky = <fs_travel>-%tky ]-%param-discount.
+      DATA(l_discount) = lt_keys[ KEY id %tky = <fs_travel>-%tky ]-%param-discount.
 
-        l_dis_val = <fs_travel>-BookingFee * ( l_discount / 100 ).
+      l_dis_val = <fs_travel>-BookingFee * ( l_discount / 100 ).
 
-        <fs_travel>-BookingFee -= l_dis_val.
+      <fs_travel>-BookingFee -= l_dis_val.
 
-        lt_travel_new = VALUE #(
-                                ( CORRESPONDING #( <fs_travel> ) )
-                               ).
+      lt_travel_new = VALUE #( ( CORRESPONDING #( <fs_travel> ) ) ).
 
     ENDLOOP.
 
@@ -333,23 +366,164 @@ CLASS lhc__Travel IMPLEMENTATION.
      ALL FIELDS WITH CORRESPONDING #( lt_keys )
      RESULT DATA(lt_updated_Travel).
 
-   result = VALUE #(
-                     FOR lwa_travel IN lt_updated_travel
-                        (
-                          %tky = lwa_travel-%tky
-                          %param = lwa_travel
-                        )
-                   ).
-
-
-
+    result = VALUE #(
+                      FOR lwa_travel IN lt_updated_travel
+                         (
+                           %tky = lwa_travel-%tky
+                           %param = lwa_travel
+                         )
+                    ).
 
   ENDMETHOD.
 
   METHOD rejectTravel.
+
+    MODIFY ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+     ENTITY _Travel
+     UPDATE FIELDS ( OverallStatus )
+     WITH VALUE #(
+                   FOR lwa_keys IN keys
+                   (
+                    %tky = lwa_keys-%tky
+                    OverallStatus = 'X'
+                   )
+                 ).
+
+    READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+     ENTITY _Travel
+     ALL FIELDS WITH CORRESPONDING #( keys )
+     RESULT DATA(lt_travels).
+
+    result = VALUE #(
+                      FOR lwa_travels IN lt_travels
+                      (
+                         %tky = lwa_travels-%tky
+                         %param = lwa_travels
+                      )
+                    ).
+
   ENDMETHOD.
 
   METHOD reCalTotalPrice.
+
+    DATA : l_total_price TYPE /dmo/total_price.
+
+    READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+     ENTITY _Travel
+     FIELDS ( BookingFee TotalPrice )
+     WITH CORRESPONDING #( keys )
+     RESULT DATA(lt_travel)
+
+     ENTITY _Booking
+     FIELDS ( TravelUUID FlightPrice )
+     WITH CORRESPONDING #( keys )
+     RESULT DATA(lt_bookings)
+
+     ENTITY _BookingSup
+     FIELDS ( TravelUUID BookingUUID Price )
+     WITH CORRESPONDING #( keys )
+     RESULT DATA(lt_booking_sup).
+
+
+    LOOP AT lt_travel ASSIGNING FIELD-SYMBOL(<fs_travel>).
+
+      CLEAR : l_total_price.
+
+      l_total_price += <fs_travel>-%data-BookingFee.
+
+      LOOP AT lt_bookings ASSIGNING FIELD-SYMBOL(<fs_bookings>)
+                          WHERE TravelUUID = <fs_travel>-%data-TravelUUID.
+
+        l_total_price += <fs_bookings>-%data-FlightPrice.
+
+        LOOP AT lt_booking_sup ASSIGNING FIELD-SYMBOL(<fs_booking_sup>)
+                               WHERE TravelUUID = <fs_travel>-%data-TravelUUID
+                               AND   BookingUUID = <fs_bookings>-%data-BookingUUID.
+          l_total_price += <fs_booking_sup>-%data-Price.
+        ENDLOOP.
+
+      ENDLOOP.
+
+      <fs_travel>-%data-TotalPrice = l_total_price.
+
+    ENDLOOP.
+
+    MODIFY ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+     ENTITY _Travel
+     UPDATE FIELDS ( TotalPrice )
+     WITH VALUE #(
+                   FOR lwa_travels IN lt_travel
+                   (
+                     %tky = lwa_travels-%tky
+                     %data-TotalPrice = lwa_travels-%data-TotalPrice
+                   )
+                 ).
+
+  ENDMETHOD.
+
+  METHOD calTotalPrice.
+
+    MODIFY ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+     ENTITY _Travel
+     EXECUTE reCalTotalPrice
+     FROM CORRESPONDING #( keys ).
+
+  ENDMETHOD.
+
+  METHOD setStatus.
+
+    READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+      ENTITY _Travel
+      FIELDS ( OverallStatus )
+      WITH CORRESPONDING #( keys )
+      RESULT DATA(lt_travel).
+
+    DELETE lt_travel WHERE OverallStatus IS NOT INITIAL.
+
+    CHECK lt_travel IS NOT INITIAL.
+
+    MODIFY ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+      ENTITY _Travel
+      UPDATE FIELDS ( TravelId )
+      WITH VALUE #(
+                    FOR lwa_travels IN lt_travel
+                      (
+                        %tky = lwa_travels-%tky
+                        OverallStatus = 'A'
+                      )
+                  ).
+
+
+  ENDMETHOD.
+
+  METHOD setTravelId.
+
+    READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+      ENTITY _Travel
+      FIELDS ( TravelId )
+      WITH CORRESPONDING #( keys )
+      RESULT DATA(lt_travel).
+
+    DELETE lt_travel WHERE TravelId IS NOT INITIAL.
+
+    CHECK lt_travel IS NOT INITIAL.
+
+    SELECT
+     FROM zaj_travel_d
+     FIELDS MAX( travel_id )
+     INTO @DATA(l_max_travelid).
+
+    MODIFY ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+      ENTITY _Travel
+      UPDATE FIELDS ( TravelId )
+      WITH VALUE #(
+                    FOR lwa_travels IN lt_travel INDEX INTO l_index
+                      (
+                        %tky = lwa_travels-%tky
+                        TravelId = l_max_travelid + l_index
+                      )
+                  ).
+
   ENDMETHOD.
 
 ENDCLASS.

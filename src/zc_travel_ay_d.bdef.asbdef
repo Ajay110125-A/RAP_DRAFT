@@ -7,6 +7,8 @@ define behavior for ZC_TRAVEL_AY_D //alias <alias_name>
   use update;
   use delete;
   use action discount;
+  use action acceptTravel;
+  use action rejectTravel;
 
   use association _Booking { create; }
 }
