@@ -28,6 +28,14 @@ CLASS lhc__Travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
 
     METHODS settravelid FOR DETERMINE ON SAVE
       IMPORTING keys FOR _travel~settravelid.
+    METHODS validatecustomerid FOR VALIDATE ON SAVE
+      IMPORTING keys FOR _travel~validatecustomerid.
+    METHODS validateagency FOR VALIDATE ON SAVE
+      IMPORTING keys FOR _travel~validateagency.
+    METHODS validatebegindate FOR VALIDATE ON SAVE
+      IMPORTING keys FOR _travel~validatebegindate.
+    METHODS validateenddate FOR VALIDATE ON SAVE
+      IMPORTING keys FOR _travel~validateenddate.
 
 ENDCLASS.
 
@@ -523,6 +531,291 @@ CLASS lhc__Travel IMPLEMENTATION.
                         TravelId = l_max_travelid + l_index
                       )
                   ).
+
+  ENDMETHOD.
+
+  METHOD validateCustomerID.
+
+    DATA : lt_customer TYPE SORTED TABLE OF /dmo/customer WITH UNIQUE KEY customer_id.
+
+    READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+      ENTITY _Travel
+      FIELDS ( CustomerId )
+      WITH CORRESPONDING #( keys )
+      RESULT DATA(lt_travels).
+
+    lt_customer = CORRESPONDING #( lt_travels DISCARDING DUPLICATES MAPPING customer_id = CustomerId EXCEPT * ).
+
+    DELETE lt_customer WHERE customer_id IS INITIAL.
+
+    IF lt_customer IS NOT INITIAL.
+
+      SELECT
+        FROM /dmo/customer
+        FIELDS customer_id
+        FOR ALL ENTRIES IN @lt_customer
+        WHERE customer_id = @lt_customer-customer_id
+        INTO TABLE @DATA(lt_valid_customers).
+
+    ENDIF.
+
+    LOOP AT lt_travels ASSIGNING FIELD-SYMBOL(<fs_travel>).
+
+      reported-_travel = VALUE #( BASE reported-_travel
+                                 (
+                                    %tky = <fs_travel>-%tky
+                                    %state_area = 'VALIDATE_CUSTOMER'
+                                 )
+                                ).
+
+      IF <fs_travel>-%data-CustomerId IS INITIAL.
+
+        failed-_travel = VALUE #( BASE failed-_travel
+                                 ( %tky = <fs_travel>-%tky )
+                                ).
+
+        reported-_travel = VALUE #( BASE reported-_travel
+                                    (
+                                      %tky = <fs_travel>-%tky
+                                      %state_area = 'VALIDATE_CUSTOMER'
+                                      %msg = NEW /dmo/cm_flight_messages(
+                                                                         textid                = /dmo/cm_flight_messages=>enter_customer_id
+                                                                         severity              = if_abap_behv_message=>severity-error
+                                                                        )
+                                      %element-customerid = if_abap_behv=>mk-on
+                                    )
+                                  ).
+      ELSEIF NOT line_exists( lt_valid_customers[ customer_id = <fs_travel>-%data-CustomerId ] ).
+
+        failed-_travel = VALUE #( BASE failed-_travel
+                                 ( %tky = <fs_travel>-%tky )
+                                ).
+
+        reported-_travel = VALUE #( BASE reported-_travel
+                                    (
+                                      %tky = <fs_travel>-%tky
+                                      %state_area = 'VALIDATE_CUSTOMER'
+                                      %msg = NEW /dmo/cm_flight_messages(
+                                                                         textid      = /dmo/cm_flight_messages=>customer_unkown
+                                                                         customer_id = <fs_travel>-%data-CustomerId
+                                                                         severity    = if_abap_behv_message=>severity-error
+                                                                        )
+                                      %element-customerid = if_abap_behv=>mk-on
+                                    )
+                                  ).
+
+      ENDIF.
+
+    ENDLOOP.
+
+
+  ENDMETHOD.
+
+  METHOD validateAgency.
+
+    DATA : lt_agencies TYPE SORTED TABLE OF /dmo/agency WITH UNIQUE KEY agency_id.
+
+    READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+      ENTITY _Travel
+      FIELDS ( AgencyId )
+      WITH CORRESPONDING #( keys )
+      RESULT DATA(lt_travels).
+
+    lt_agencies = CORRESPONDING #( lt_travels DISCARDING DUPLICATES MAPPING agency_id = AgencyId EXCEPT * ).
+
+    DELETE lt_agencies WHERE agency_id IS INITIAL.
+
+    IF lt_agencies IS NOT INITIAL.
+
+      SELECT
+        FROM /dmo/agency
+        FIELDS agency_id
+        FOR ALL ENTRIES IN @lt_agencies
+        WHERE agency_id = @lt_agencies-agency_id
+        INTO TABLE @DATA(lt_valid_agencies).
+
+    ENDIF.
+
+    LOOP AT lt_travels ASSIGNING FIELD-SYMBOL(<fs_travel>).
+
+      reported-_travel = VALUE #( BASE reported-_travel
+                                  (
+                                    %tky = <fs_travel>-%tky
+                                    %state_area = 'INVALID_AGENCY'
+                                  )
+                                ).
+
+      IF <fs_travel>-%data-AgencyId IS INITIAL.
+
+        failed-_travel = VALUE #( BASE failed-_travel
+                                  ( %tky = <fs_travel>-%tky )
+                                ).
+
+        reported-_travel = VALUE #(
+                                    BASE reported-_travel
+                                    (
+                                      %tky = <fs_travel>-%tky
+                                      %state_area = 'INVALID_AGENCY'
+                                      %msg = NEW /dmo/cm_flight_messages(
+                                                                          textid                = /dmo/cm_flight_messages=>enter_agency_id
+                                                                          severity              = if_abap_behv_message=>severity-error
+                                                                        )
+                                      %element-agencyid = if_abap_behv=>mk-on
+                                    )
+                                  ).
+
+      ELSEIF NOT line_exists( lt_valid_agencies[ agency_id = <fs_travel>-%data-AgencyId ] ).
+
+        failed-_travel = VALUE #( BASE failed-_travel
+                                  ( %tky = <fs_travel>-%tky )
+                                ).
+
+        reported-_travel = VALUE #( BASE reported-_travel
+                                    (
+                                      %tky = <fs_travel>-%tky
+                                      %state_area = 'INVALID_AGENCY'
+                                      %msg = NEW /dmo/cm_flight_messages(
+                                                                         textid                = /dmo/cm_flight_messages=>agency_unkown
+                                                                         agency_id             = <fs_travel>-%data-AgencyId
+                                                                         severity              = if_abap_behv_message=>severity-error
+                                                                       )
+                                      %element-agencyid = if_abap_behv=>mk-on
+                                    )
+                                  ).
+      ENDIF.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD validateBeginDate.
+
+    READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+      ENTITY _Travel
+      FIELDS ( BeginDate )
+      WITH CORRESPONDING #( keys )
+      RESULT DATA(lt_travels).
+
+    LOOP AT lt_travels ASSIGNING FIELD-SYMBOL(<fs_travel>).
+
+      reported-_travel = VALUE #( BASE reported-_travel
+                                  (
+                                    %tky = <fs_travel>-%tky
+                                    %state_area = 'INVALID_BEGINDATE'
+                                  )
+                                ).
+
+      IF <fs_travel>-%data-BeginDate IS INITIAL.
+
+        failed-_travel = VALUE #( BASE failed-_travel
+                                  ( %tky = <fs_travel>-%tky )
+                                ).
+
+        reported-_travel = VALUE #( BASE reported-_travel
+                                    (
+                                      %tky = <fs_travel>-%tky
+                                      %state_area = 'INVALID_BEGINDATE'
+                                      %msg = NEW /dmo/cm_flight_messages(
+                                                                          textid                = /dmo/cm_flight_messages=>enter_begin_date
+                                                                          severity              = if_abap_behv_message=>severity-error
+                                                                        )
+                                      %element-begindate = if_abap_behv=>mk-on
+                                    )
+                                  ).
+      ELSEIF <fs_travel>-BeginDate < cl_abap_context_info=>get_system_date( ).
+
+        failed-_travel = VALUE #( BASE failed-_travel
+                                  ( %tky = <fs_travel>-%tky )
+                                ).
+
+        reported-_travel = VALUE #( BASE reported-_travel
+                                    (
+                                      %tky = <fs_travel>-%tky
+                                      %state_area = 'INVALID_BEGINDATE'
+                                      %msg = NEW /dmo/cm_flight_messages(
+                                                                          textid                = /dmo/cm_flight_messages=>enter_begin_date
+                                                                          begin_date            = <fs_travel>-%data-BeginDate
+                                                                          severity              = if_abap_behv_message=>severity-error
+                                                                        )
+                                      %element-begindate = if_abap_behv=>mk-on
+                                    )
+                                  ).
+
+
+      ENDIF.
+
+    ENDLOOP.
+
+
+  ENDMETHOD.
+
+  METHOD validateEndDate.
+
+    READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+      ENTITY _Travel
+      FIELDS ( BeginDate EndDate )
+      WITH CORRESPONDING #( keys )
+      RESULT DATA(lt_travels).
+
+    LOOP AT lt_travels ASSIGNING FIELD-SYMBOL(<fs_travel>).
+
+      reported-_travel = VALUE #( BASE reported-_travel
+                                  (
+                                    %tky = <fs_travel>-%tky
+                                    %state_area = 'INVALID_ENDDATE'
+                                  )
+                                ).
+
+      IF <fs_travel>-%data-EndDate IS INITIAL.
+
+        failed-_travel = VALUE #( BASE failed-_travel
+                                  ( %tky = <fs_travel>-%tky )
+                                ).
+
+        reported-_travel = VALUE #( BASE reported-_travel
+                                    (
+                                      %tky = <fs_travel>-%tky
+                                      %state_area = 'INVALID_ENDDATE'
+                                      %msg = NEW /dmo/cm_flight_messages(
+                                                                          textid                = /dmo/cm_flight_messages=>enter_end_date
+                                                                          severity              = if_abap_behv_message=>severity-error
+                                                                        )
+                                      %element-enddate = if_abap_behv=>mk-on
+                                    )
+                                  ).
+      ELSEIF <fs_travel>-%data-BeginDate > <fs_travel>-%data-EndDate.
+
+        failed-_travel = VALUE #( BASE failed-_travel
+                                  ( %tky = <fs_travel>-%tky )
+                                ).
+
+        reported-_travel = VALUE #( BASE reported-_travel
+                                    (
+                                      %tky = <fs_travel>-%tky
+                                      %state_area = 'INVALID_ENDDATE'
+                                      %msg = NEW /dmo/cm_flight_messages(
+                                                                          textid                = /dmo/cm_flight_messages=>enter_end_date
+                                                                          end_date              = <fs_travel>-%data-EndDate
+                                                                          severity              = if_abap_behv_message=>severity-error
+                                                                        )
+                                      %element-enddate = if_abap_behv=>mk-on
+                                    )
+                                  ).
+
+      ENDIF.
+
+    ENDLOOP.
+
+
+
+
+
+
+
+
+
+
+
 
   ENDMETHOD.
 

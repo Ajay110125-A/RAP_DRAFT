@@ -34,7 +34,9 @@ define root view entity ZC_TRAVEL_AY_D
                                                     name: '/DMO/I_Customer_StdVH',
                                                     element: 'CustomerID'
                                                    },
-                                           useForValidation: true
+                                           useForValidation: true //(This will ensure that invalid not not entered, meaning value should be selected from the f4 help)
+                                                                  //This validation only works if UI5 app is build on this object using this metadata.
+                                                                  //But if this BO is called from different then developer has to write explicit code for validating in validation method.
                                          }]
       CustomerId,
       _Customer.LastName        as CustomerName,

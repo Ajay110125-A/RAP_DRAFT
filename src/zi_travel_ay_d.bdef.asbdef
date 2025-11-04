@@ -41,6 +41,11 @@ authorization master ( instance, global )
       TravelId           = travel_id;
     }
 
+  validation validateCustomerID on save { create; update; field CustomerId; }
+  validation validateAgency on save { create; update; field AgencyId; }
+  validation validateBeginDate on save { create; update; field BeginDate; }
+  validation validateEndDate  on save { create; update; field EndDate; }
+
   determination setTravelId on save { create; }
   determination setStatus on modify { create; update; }
   determination calTotalPrice on modify { create; field BookingFee, CurrencyCode; }
