@@ -60,7 +60,7 @@ authorization master ( instance, global )
 
   //Determinations
   determination setTravelId on save { create; }
-  determination setStatus on modify { create; update; }
+  determination setStatus on modify { create; field OverallStatus; }
   determination calTotalPrice on modify { create; field BookingFee, CurrencyCode; }
 
   //Side Effects
@@ -80,7 +80,10 @@ authorization dependent by _Travel
   delete;
 
   field ( numbering : managed, readonly ) BookingUUID;
-  field ( readonly ) TravelUUID, BookingId, BookingDate;
+  field ( readonly ) TravelUUID, BookingId, BookingDate, BookingStatus;
+
+  action ( authorization : update ) Accept result [1] $self;
+  action ( authorization : update ) Cancel result [1] $self;
 
   association _Travel;
   association _BookingSup { create ( authorization : update ); }
@@ -108,8 +111,9 @@ authorization dependent by _Travel
   validation validateFlightDate on save { create; field FlightDate; }
 
   //Determinations
-  determination setBookingId on save { create; }
-  determination setBookingDate on save { create; }
+  determination setBookingId on save { create; field BookingId; }
+  determination setBookingDate on save { create; field BookingDate; }
+  determination setBookingStatus on save { create; field BookingStatus; }
   determination calTotalPrice on modify { create; field FlightPrice, CurrencyCode; }
 
 }

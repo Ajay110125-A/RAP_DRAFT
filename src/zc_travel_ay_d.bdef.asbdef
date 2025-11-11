@@ -20,6 +20,9 @@ define behavior for ZC_BOOKING_AY_D //alias <alias_name>
   use update;
   use delete;
 
+  use action Accept;
+  use action Cancel;
+
   use association _Travel;
   use association _BookingSup { create; }
 }

@@ -38,7 +38,11 @@ annotate entity ZC_BOOKING_AY_D with
   TravelUUID;
 
   @UI:{
-        lineItem: [{ position: 10, importance: #HIGH }],
+        lineItem: [
+                   { position: 10, importance: #HIGH },
+                   { type: #FOR_ACTION, dataAction: 'Accept', label: 'Book' },
+                   { type: #FOR_ACTION, dataAction: 'Cancel', label: 'Cancel' }
+                  ],
         identification: [{  position: 10 }]
       }
   BookingId;

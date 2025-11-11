@@ -20,6 +20,13 @@ CLASS lhc__booking DEFINITION INHERITING FROM cl_abap_behavior_handler.
 
     METHODS validateFlightDate FOR VALIDATE ON SAVE
       IMPORTING keys FOR _Booking~validateFlightDate.
+    METHODS setBookingStatus FOR DETERMINE ON SAVE
+      IMPORTING keys FOR _Booking~setBookingStatus.
+    METHODS Accept FOR MODIFY
+      IMPORTING keys FOR ACTION _Booking~Accept RESULT result.
+
+    METHODS Cancel FOR MODIFY
+      IMPORTING keys FOR ACTION _Booking~Cancel RESULT result.
 
 ENDCLASS.
 
@@ -461,18 +468,124 @@ CLASS lhc__booking IMPLEMENTATION.
 
     LOOP AT lt_bookings ASSIGNING FIELD-SYMBOL(<fs_booking>).
 
-        reported-_booking = VALUE #( BASE reported-_booking
-                                     (
-                                       %tky = <fs_booking>-%tky
-                                       %state_area = 'INVALID_FLIGHT_DATE'
-                                     )
-                                   ).
+      reported-_booking = VALUE #( BASE reported-_booking
+                                   (
+                                     %tky = <fs_booking>-%tky
+                                     %state_area = 'INVALID_FLIGHT_DATE'
+                                   )
+                                 ).
 
 *        IF
 
     ENDLOOP.
 
 
+  ENDMETHOD.
+
+  METHOD setBookingStatus.
+
+    DATA : lt_modified_bookings TYPE TABLE FOR UPDATE zi_booking_ay_d.
+
+    READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+      ENTITY _Booking BY \_Travel
+      FROM CORRESPONDING #( keys )
+      RESULT DATA(lt_travels).
+
+    CHECK lt_travels IS NOT INITIAL.
+
+    LOOP AT lt_travels ASSIGNING FIELD-SYMBOL(<fs_travel>).
+
+      READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+        ENTITY _Travel BY \_Booking
+        FIELDS ( TravelUUID BookingStatus )
+        WITH VALUE #( ( %tky = <fs_travel>-%tky ) )
+        RESULT DATA(lt_bookings).
+
+      DELETE lt_bookings WHERE %data-BookingStatus IS NOT INITIAL.
+
+      MODIFY lt_bookings FROM VALUE #( %data-BookingStatus = 'N' ) TRANSPORTING %data-BookingStatus WHERE %key-BookingUUID IS NOT INITIAL.
+
+      lt_modified_bookings = VALUE #( BASE lt_modified_bookings
+                                      FOR lwa_booking IN lt_bookings
+                                      (
+                                        %tky = lwa_booking-%tky
+                                        %data-TravelUUID = lwa_booking-%data-TravelUUID
+                                        %data-BookingStatus = lwa_booking-%data-BookingStatus
+                                      )
+                                    ).
+
+    ENDLOOP.
+
+    MODIFY ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+      ENTITY _Booking
+      UPDATE FIELDS ( BookingStatus )
+      WITH CORRESPONDING #( lt_modified_bookings ).
+
+
+  ENDMETHOD.
+
+  METHOD Accept.
+
+    DATA : lt_modified_bookings TYPE TABLE FOR UPDATE zi_booking_ay_d,
+           lt_r_bookings        TYPE RANGE OF zi_booking_ay_d-BookingUUID.
+
+    lt_r_bookings = VALUE #(
+                             FOR lwa_keys IN keys
+                             (
+                               sign = 'I'
+                               option = 'EQ'
+                               low = lwa_keys-%tky-BookingUUID
+                             )
+                           ).
+
+    READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+      ENTITY _Booking BY \_Travel
+      FROM CORRESPONDING #( keys )
+      RESULT DATA(lt_travels).
+
+    LOOP AT lt_travels ASSIGNING FIELD-SYMBOL(<fs_travel>).
+
+      READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+        ENTITY _Travel BY \_Booking
+        FIELDS ( TravelUUID BookingStatus )
+        WITH VALUE #( ( %tky = <fs_travel>-%tky ) )
+        RESULT DATA(lt_bookings).
+
+      LOOP AT lt_bookings ASSIGNING FIELD-SYMBOL(<fs_booking>) WHERE %data-BookingUUID IN lt_r_bookings.
+
+        lt_modified_bookings = VALUE #( BASE lt_modified_bookings
+                                        (
+                                          %tky = <fs_booking>-%tky
+                                          %data-TravelUUID = <fs_booking>-TravelUUID
+                                          %data-BookingStatus = 'B'
+                                        )
+                                      ).
+
+      ENDLOOP.
+
+    ENDLOOP.
+
+    MODIFY ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+      ENTITY _Booking
+      UPDATE FIELDS ( BookingStatus )
+      WITH CORRESPONDING #( lt_modified_bookings ).
+
+    READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+      ENTITY _Booking
+      ALL FIELDS WITH CORRESPONDING #( keys )
+      RESULT DATA(lt_bookings_done).
+
+    result = VALUE #(
+                      FOR lwa_booking IN lt_bookings_done
+                      (
+                        %tky = lwa_booking-%tky
+                        %param = lwa_booking
+                      )
+                    ).
+
+  ENDMETHOD.
+
+  METHOD Cancel.
   ENDMETHOD.
 
 ENDCLASS.

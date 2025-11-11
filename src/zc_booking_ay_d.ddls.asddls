@@ -75,7 +75,15 @@ define view entity ZC_BOOKING_AY_D
                                             useForValidation: true
                                         }]
       CurrencyCode,
-
+      
+      
+      @Consumption.valueHelpDefinition: [{  
+                                            entity: { 
+                                                      name: '/DMO/I_Booking_Status_VH',
+                                                      element: 'BookingStatus'
+                                                    },
+                                            useForValidation: true
+                                        }]
       @ObjectModel.text.element: [ 'BookingStatusText' ]
       BookingStatus,
       _BookingStatus._Text.Text as BookingStatusText : localized,

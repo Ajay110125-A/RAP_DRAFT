@@ -77,9 +77,9 @@ CLASS lhc__Travel IMPLEMENTATION.
 
         IF requested_authorizations-%update = if_abap_behv=>mk-on.
 
-          AUTHORITY-CHECK OBJECT '/DMO/TRAVL'
-          ID '/DMO/CNTRY' FIELD <fs_age_cnty>-country_code
-          ID 'ACTVT' FIELD  '02'.
+*          AUTHORITY-CHECK OBJECT '/DMO/TRAVL'
+*          ID '/DMO/CNTRY' FIELD <fs_age_cnty>-country_code
+*          ID 'ACTVT' FIELD  '02'.
 
           l_update = COND #(
                                    WHEN sy-subrc EQ 0 THEN if_abap_behv=>auth-allowed
@@ -113,9 +113,9 @@ CLASS lhc__Travel IMPLEMENTATION.
 
         IF requested_authorizations-%delete = if_abap_behv=>mk-on.
 
-          AUTHORITY-CHECK OBJECT '/DMO/TRAVL'
-             ID '/DMO/CNTRY' FIELD <fs_age_cnty>-country_code
-             ID 'ACTVT' FIELD  '06'.
+*          AUTHORITY-CHECK OBJECT '/DMO/TRAVL'
+*             ID '/DMO/CNTRY' FIELD <fs_age_cnty>-country_code
+*             ID 'ACTVT' FIELD  '06'.
 
           l_delete = COND #(
                                     WHEN sy-subrc EQ 0 THEN if_abap_behv=>auth-allowed
@@ -156,8 +156,8 @@ CLASS lhc__Travel IMPLEMENTATION.
                         BASE result
                         (
                           TravelUUID = lwa_travels-%key-TravelUUID
-                          %update = CONV #( '01' ) "l_update
-                          %delete = CONV #( '01' ) "l_delete
+                          %update = CONV #( '00' ) "l_update
+                          %delete = CONV #( '00' ) "l_delete
 
                         )
                       ).
@@ -253,9 +253,9 @@ CLASS lhc__Travel IMPLEMENTATION.
         READ TABLE lt_agency ASSIGNING FIELD-SYMBOL(<fs_agency>) WITH KEY agency_id = <fs_entity>-%data-AgencyId.
 
 
-        AUTHORITY-CHECK OBJECT '/DMO/TRAVl'
-           ID '/DMO/CNTRY' FIELD <fs_agency>-country_code
-           ID 'ACTVT' FIELD  '06'.
+*        AUTHORITY-CHECK OBJECT '/DMO/TRAVl'
+*           ID '/DMO/CNTRY' FIELD <fs_agency>-country_code
+*           ID 'ACTVT' FIELD  '06'.
         IF sy-subrc NE 0.
 
           failed-_travel = VALUE #(
@@ -492,12 +492,12 @@ CLASS lhc__Travel IMPLEMENTATION.
 
     MODIFY ENTITIES OF zi_travel_ay_d IN LOCAL MODE
       ENTITY _Travel
-      UPDATE FIELDS ( TravelId )
+      UPDATE FIELDS ( OverallStatus )
       WITH VALUE #(
                     FOR lwa_travels IN lt_travel
                       (
                         %tky = lwa_travels-%tky
-                        OverallStatus = 'A'
+                        OverallStatus = 'O'
                       )
                   ).
 
