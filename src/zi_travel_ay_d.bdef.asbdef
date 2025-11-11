@@ -1,10 +1,14 @@
 managed;
 strict ( 2 );
 
+with draft;
+
 define behavior for ZI_TRAVEL_AY_D alias _Travel
 implementation in class ZCL_BP_TRAVEL_AY_D unique
 persistent table zaj_travel_d
+draft table zaj_travel_d_d
 lock master
+total etag LastChangedAt
 authorization master ( instance, global )
 //etag master <field_name>
 {
@@ -20,6 +24,13 @@ authorization master ( instance, global )
   action ( authorization : update ) discount parameter ZAJ_DEDUCT_DISCOUNT result [1] $self;
 
   internal action reCalTotalPrice;
+
+  draft action Activate optimized;
+  draft action Edit;
+  draft action Resume;
+  draft action Discard;
+  draft determine action Prepare;
+
 
   mapping for zaj_travel_d
     {
@@ -41,15 +52,18 @@ authorization master ( instance, global )
       TravelId           = travel_id;
     }
 
+  //Validations
   validation validateCustomerID on save { create; update; field CustomerId; }
   validation validateAgency on save { create; update; field AgencyId; }
   validation validateBeginDate on save { create; update; field BeginDate; }
-  validation validateEndDate  on save { create; update; field EndDate; }
+  validation validateEndDate on save { create; update; field EndDate; }
 
+  //Determinations
   determination setTravelId on save { create; }
   determination setStatus on modify { create; update; }
   determination calTotalPrice on modify { create; field BookingFee, CurrencyCode; }
 
+  //Side Effects
   side effects { field BookingFee affects field TotalPrice; }
 
 }
@@ -57,6 +71,7 @@ authorization master ( instance, global )
 define behavior for ZI_BOOKING_AY_D alias _Booking
 implementation in class ZCL_BP_BOOKING_AY_D unique
 persistent table zaj_booking_d
+draft table zaj_booking_d_d
 lock dependent by _Travel
 authorization dependent by _Travel
 //etag master <field_name>
@@ -86,15 +101,23 @@ authorization dependent by _Travel
       TravelUUID         = parent_uuid;
     }
 
-  determination setBookingId   on save { create; }
+  //Validations
+  validation validateCustomer on save { create; field CustomerId; }
+  validation validateCarrierId on save { create; field CarrierId; }
+  validation validateConnectionId on save { create; field ConnectionId; }
+  validation validateFlightDate on save { create; field FlightDate; }
+
+  //Determinations
+  determination setBookingId on save { create; }
   determination setBookingDate on save { create; }
-  determination calTotalPrice  on modify { create; field FlightPrice, CurrencyCode; }
+  determination calTotalPrice on modify { create; field FlightPrice, CurrencyCode; }
 
 }
 
 define behavior for ZI_BKSUPP_AY_D alias _BookingSup
 implementation in class ZCL_BP_BKSUPP_AY_D unique
 persistent table zaj_bksupp_d
+draft table zaj_bksupp_d_d
 lock dependent by _Travel
 authorization dependent by _Travel
 //etag master <field_name>
@@ -103,6 +126,7 @@ authorization dependent by _Travel
   delete;
   field ( numbering : managed, readonly ) BookSupplUUID;
   field ( readonly ) TravelUUID, BookingUUID;
+  field ( mandatory ) SupplementId;
   association _Travel;
   association _Booking;
   mapping for zaj_bksupp_d
@@ -117,24 +141,9 @@ authorization dependent by _Travel
       TravelUUID          = root_uuid;
     }
 
+  //Validations
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  validation validateSupplimentId on save { create; field SupplementId; }
 
 
 
