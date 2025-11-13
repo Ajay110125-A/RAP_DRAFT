@@ -13,7 +13,7 @@ define view entity ZI_BKSUPP_AY_D
   key booksuppl_uuid        as BookSupplUUID,
       root_uuid             as TravelUUID,
       parent_uuid           as BookingUUID,
-      booking_supplement_id as BookingSupplementId,
+//      booking_supplement_id as BookingSupplementId,
       supplement_id         as SupplementId,
       @Semantics.amount.currencyCode: 'CurrencyCode'
       price                 as Price,

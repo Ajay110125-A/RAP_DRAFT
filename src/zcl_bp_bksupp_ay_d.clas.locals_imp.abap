@@ -4,6 +4,8 @@ CLASS lhc__bookingsup DEFINITION INHERITING FROM cl_abap_behavior_handler.
 
     METHODS validateSupplimentId FOR VALIDATE ON SAVE
       IMPORTING keys FOR _BookingSup~validateSupplimentId.
+    METHODS recalTotalPrice FOR DETERMINE ON MODIFY
+      IMPORTING keys FOR _BookingSup~recalTotalPrice.
 
 ENDCLASS.
 
@@ -107,6 +109,24 @@ CLASS lhc__bookingsup IMPLEMENTATION.
 
     ENDLOOP.
 
+
+  ENDMETHOD.
+
+  METHOD recalTotalPrice.
+
+    READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+      ENTITY _BookingSup BY \_Booking
+      FIELDS ( TravelUUID )
+      WITH CORRESPONDING #( keys )
+      RESULT DATA(lt_bookings).
+
+    MODIFY ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+      ENTITY _Travel
+      EXECUTE reCalTotalPrice
+      FROM VALUE #(
+                    FOR lwa_book IN lt_bookings
+                    ( %tky-TravelUUID = lwa_book-TravelUUID )
+                  ).
 
   ENDMETHOD.
 

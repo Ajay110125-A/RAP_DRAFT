@@ -38,7 +38,7 @@ CLASS lhc__booking IMPLEMENTATION.
 *** IN this method we get only BookingUUID, but to reuse the travel internal action reCalTotalPrice we need TravelUUIDs
 *** So there this statements says that we are fetching TravelUUIDs using BookingUUIDs which we get by default as importing parameters
     READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
-      ENTITY _Travel BY \_Booking
+      ENTITY _Booking BY \_Travel
       FIELDS ( TravelUUID )
       WITH CORRESPONDING #( keys )
       RESULT DATA(lt_travels).
@@ -454,32 +454,65 @@ CLASS lhc__booking IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD validateFlightDate.
+    READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+         ENTITY _Booking
+         FIELDS ( CarrierId ConnectionId FlightDate )
+         WITH CORRESPONDING #( keys )
+         RESULT DATA(lt_bookings).
 
     READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
-      ENTITY _Booking
-      FIELDS ( FlightDate )
-      WITH CORRESPONDING #( keys )
-      RESULT DATA(lt_bookings).
+         ENTITY _Booking BY \_Travel
+         FROM CORRESPONDING #( lt_bookings )
+         " TODO: variable is assigned but never used (ABAP cleaner)
+         LINK DATA(lt_linked_travels).
 
-    READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
-      ENTITY _Booking BY \_Travel
-      FROM CORRESPONDING #( lt_bookings )
-      LINK DATA(lt_linked_travels).
+    SELECT FROM /DMO/I_Flight
+      FIELDS AirlineID, ConnectionID, FlightDate
+      FOR ALL ENTRIES IN @lt_bookings
+      WHERE AirlineID    = @lt_bookings-%data-CarrierId
+        AND ConnectionID = @lt_bookings-%data-ConnectionId
+        AND FlightDate   = @lt_bookings-%data-FlightDate
+      INTO TABLE @DATA(lt_flights).
 
     LOOP AT lt_bookings ASSIGNING FIELD-SYMBOL(<fs_booking>).
 
       reported-_booking = VALUE #( BASE reported-_booking
-                                   (
-                                     %tky = <fs_booking>-%tky
-                                     %state_area = 'INVALID_FLIGHT_DATE'
-                                   )
-                                 ).
+                                   ( %tky        = <fs_booking>-%tky
+                                     %state_area = 'INVALID_FLIGHT_DATE' ) ).
+      IF <fs_booking>-%data-FlightDate IS INITIAL. ".
 
-*        IF
+        failed-_booking = VALUE #( BASE failed-_booking
+                                   ( %tky = <fs_booking>-%tky ) ).
+
+        reported-_booking = VALUE #(
+            BASE reported-_booking
+            ( %tky                = <fs_booking>-%tky
+              %msg                = NEW /dmo/cm_flight_messages( textid   = /dmo/cm_flight_messages=>enter_flight_date
+                                                                 severity = if_abap_behv_message=>severity-error )
+              %state_area         = 'INVALID_FLIGHT_DATE'
+              %element-flightdate = if_abap_behv=>mk-on ) ).
+      ELSEIF NOT line_exists( lt_flights[ AirlineID    = <fs_booking>-%data-CarrierId
+                                          ConnectionID = <fs_booking>-%data-ConnectionId
+                                          FlightDate   = <fs_booking>-%data-FlightDate ] ).
+
+        failed-_booking = VALUE #( BASE failed-_booking
+                                   ( %tky = <fs_booking>-%tky ) ).
+
+        reported-_booking = VALUE #(
+            BASE reported-_booking
+            ( %tky                = <fs_booking>-%tky
+              %msg                = NEW /dmo/cm_flight_messages(
+                                            textid        = /dmo/cm_flight_messages=>no_flight_exists
+                                            carrier_id    = <fs_booking>-%data-CarrierId
+                                            connection_id = <fs_booking>-%data-ConnectionId
+                                            flight_date   = <fs_booking>-%data-FlightDate
+                                            severity      = if_abap_behv_message=>severity-error )
+              %state_area         = 'INVALID_FLIGHT_DATE'
+              %element-flightdate = if_abap_behv=>mk-on ) ).
+
+      ENDIF.
 
     ENDLOOP.
-
-
   ENDMETHOD.
 
   METHOD setBookingStatus.
@@ -586,6 +619,67 @@ CLASS lhc__booking IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD Cancel.
+
+    DATA : lt_r_bookings TYPE RANGE OF zi_booking_ay_d-BookingUUID,
+           lt_bookings_u TYPE TABLE FOR UPDATE zi_booking_ay_d.
+
+    lt_r_bookings = VALUE #( FOR lwa_keys IN keys
+                             (
+                               sign = 'I'
+                               option = 'EQ'
+                               low = lwa_keys-BookingUUID
+                             )
+                           ).
+
+    READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+      ENTITY _Booking BY \_Travel
+      FROM CORRESPONDING #( keys )
+      RESULT DATA(lt_travels).
+
+    CHECK lt_travels IS NOT INITIAL.
+
+    LOOP AT lt_travels ASSIGNING FIELD-SYMBOL(<fs_travel>).
+
+      READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+        ENTITY _Travel BY \_Booking
+        FIELDS ( TravelUUID BookingUUID )
+        WITH VALUE #( ( %tky = <fs_travel>-%tky ) )
+        RESULT DATA(lt_bookings).
+
+      LOOP AT lt_bookings ASSIGNING FIELD-SYMBOL(<fs_booking>) WHERE %tky-BookingUUID IN lt_r_bookings.
+
+        lt_bookings_u = VALUE #( BASE lt_bookings_u
+                                  (
+                                    %tky = <fs_booking>-%tky
+                                    %data-TravelUUID = <fs_booking>-%data-TravelUUID
+                                    %data-BookingStatus = 'X'
+                                  )
+                               ).
+
+      ENDLOOP.
+
+    ENDLOOP.
+
+    MODIFY ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+      ENTITY _Booking
+      UPDATE FIELDS ( BookingStatus )
+      WITH CORRESPONDING #( lt_bookings_u ).
+
+    READ ENTITIES OF zi_travel_ay_d IN LOCAL MODE
+      ENTITY _Booking
+      ALL FIELDS WITH CORRESPONDING #( lt_bookings_u )
+      RESULT DATA(lt_bookings_new).
+
+    result = VALUE #(
+                       FOR lwa_book_n IN lt_bookings_new
+                       (
+                         %tky = lwa_book_n-%tky
+                         %param = lwa_book_n
+                       )
+                    ).
+
+
+
   ENDMETHOD.
 
 ENDCLASS.

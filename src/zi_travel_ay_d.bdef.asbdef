@@ -19,9 +19,9 @@ authorization master ( instance, global )
   field ( readonly ) TravelId, OverallStatus;
   association _Booking { create ( authorization : update ); }
 
-  action ( authorization : update ) acceptTravel result [1] $self;
-  action ( authorization : update ) rejectTravel result [1] $self;
-  action ( authorization : update ) discount parameter ZAJ_DEDUCT_DISCOUNT result [1] $self;
+  action ( features : instance ) acceptTravel result [1] $self;
+  action ( features : instance ) rejectTravel result [1] $self;
+  action ( features : instance ) discount parameter ZAJ_DEDUCT_DISCOUNT result [1] $self;
 
   internal action reCalTotalPrice;
 
@@ -116,6 +116,9 @@ authorization dependent by _Travel
   determination setBookingStatus on save { create; field BookingStatus; }
   determination calTotalPrice on modify { create; field FlightPrice, CurrencyCode; }
 
+  //Side Effects
+  side effects { field FlightPrice affects field _Travel.TotalPrice; }
+
 }
 
 define behavior for ZI_BKSUPP_AY_D alias _BookingSup
@@ -137,7 +140,7 @@ authorization dependent by _Travel
     {
       Price               = price;
       BookSupplUUID       = booksuppl_uuid;
-      BookingSupplementID = booking_supplement_id;
+//      BookingSupplementID = booking_supplement_id;
       BookingUUID         = parent_uuid;
       CurrencyCode        = currency_code;
       LocalLastChangedAt  = local_last_changed_at;
@@ -146,9 +149,13 @@ authorization dependent by _Travel
     }
 
   //Validations
-
   validation validateSupplimentId on save { create; field SupplementId; }
 
+//Determinations
+  determination recalTotalPrice on modify { create; update; field Price; }
+
+//Side Effeets
+  side effects { field Price affects field _Travel.TotalPrice; }
 
 
 

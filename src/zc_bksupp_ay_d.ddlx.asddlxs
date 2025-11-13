@@ -6,11 +6,11 @@
                    typeNamePlural: 'Booking Supplement List',
                    title: {
                             type: #STANDARD,
-                            value: 'BookingSupplementId'
+                            value: 'SupplementId'
                           }
 
                   },
-      presentationVariant: [{ sortOrder: [{ by: 'BookingSupplementId', direction: #DESC }] }]
+      presentationVariant: [{ sortOrder: [{ by: 'SupplementId', direction: #DESC }] }]
     }
 annotate entity ZC_BKSUPP_AY_D with
 {
@@ -30,22 +30,22 @@ annotate entity ZC_BKSUPP_AY_D with
   @UI.hidden: true
   BookingUUID;
 
-  @UI:{
-        lineItem: [{  position: 10, importance: #HIGH }],
-        identification: [{ position: 10 }]
-      }
-  BookingSupplementId;
+//  @UI:{
+//        lineItem: [{  position: 10, importance: #HIGH }],
+//        identification: [{ position: 10 }]
+//      }
+//  BookingSupplementId;
 
   @UI:{
         lineItem: [{  position: 20, importance: #HIGH }],
-        identification: [{ position: 10 }]
+        identification: [{ position: 20 }]
       }
   SupplementId;
   //    SupplimentText;
 
   @UI:{
         lineItem: [{  position: 30, importance: #HIGH }],
-        identification: [{ position: 10 }]
+        identification: [{ position: 30 }]
       }
   Price;
   //    CurrencyCode;

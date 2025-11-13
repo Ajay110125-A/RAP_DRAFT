@@ -12,9 +12,9 @@ define view entity ZC_BKSUPP_AY_D
 
       BookingUUID,
 
-      @Search.defaultSearchElement: true
-      @Search.fuzzinessThreshold: 0.7
-      BookingSupplementId,
+//      @Search.defaultSearchElement: true
+//      @Search.fuzzinessThreshold: 0.7
+//      BookingSupplementId,
 
       @ObjectModel.text.element: [ 'SupplimentText' ]
       @Consumption.valueHelpDefinition: [{
