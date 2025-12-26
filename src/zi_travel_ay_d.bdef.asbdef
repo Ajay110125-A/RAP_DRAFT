@@ -10,14 +10,14 @@ draft table zaj_travel_d_d
 lock master
 total etag LastChangedAt
 authorization master ( instance, global )
-//etag master <field_name>
+etag master LocalLastChangedAt
 {
   create ( precheck );
   update ( precheck );
   delete;
   field ( numbering : managed, readonly ) TravelUUID;
   field ( readonly ) TravelId, OverallStatus;
-  association _Booking { create ( authorization : update ); }
+  association _Booking { create ( authorization : update ); with draft; }
 
   action ( features : instance ) acceptTravel result [1] $self;
   action ( features : instance ) rejectTravel result [1] $self;
@@ -29,7 +29,18 @@ authorization master ( instance, global )
   draft action Edit;
   draft action Resume;
   draft action Discard;
-  draft determine action Prepare;
+  draft determine action Prepare
+  {
+    validation validateCustomerID;
+    validation validateAgency;
+    validation validateBeginDate;
+    validation validateEndDate;
+    validation _Booking~validateCustomer;
+    validation _Booking~validateCarrierId;
+    validation _Booking~validateConnectionId;
+    validation _Booking~validateFlightDate;
+    validation _BookingSup~validateSupplimentId;
+  }
 
 
   mapping for zaj_travel_d
@@ -74,7 +85,7 @@ persistent table zaj_booking_d
 draft table zaj_booking_d_d
 lock dependent by _Travel
 authorization dependent by _Travel
-//etag master <field_name>
+etag master LocalLastChangedAt
 {
   update;
   delete;
@@ -85,8 +96,8 @@ authorization dependent by _Travel
   action ( authorization : update ) Accept result [1] $self;
   action ( authorization : update ) Cancel result [1] $self;
 
-  association _Travel;
-  association _BookingSup { create ( authorization : update ); }
+  association _Travel { with draft; }
+  association _BookingSup { create ( authorization : update ); with draft; }
 
   mapping for zaj_booking_d
     {
@@ -127,34 +138,34 @@ persistent table zaj_bksupp_d
 draft table zaj_bksupp_d_d
 lock dependent by _Travel
 authorization dependent by _Travel
-//etag master <field_name>
+etag master LocalLastChangedAt
 {
   update;
   delete;
   field ( numbering : managed, readonly ) BookSupplUUID;
   field ( readonly ) TravelUUID, BookingUUID;
   field ( mandatory ) SupplementId;
-  association _Travel;
-  association _Booking;
+  association _Travel { with draft; }
+  association _Booking { with draft; }
   mapping for zaj_bksupp_d
     {
-      Price               = price;
-      BookSupplUUID       = booksuppl_uuid;
-//      BookingSupplementID = booking_supplement_id;
-      BookingUUID         = parent_uuid;
-      CurrencyCode        = currency_code;
-      LocalLastChangedAt  = local_last_changed_at;
-      SupplementID        = supplement_id;
-      TravelUUID          = root_uuid;
+      Price              = price;
+      BookSupplUUID      = booksuppl_uuid;
+      //      BookingSupplementID = booking_supplement_id;
+      BookingUUID        = parent_uuid;
+      CurrencyCode       = currency_code;
+      LocalLastChangedAt = local_last_changed_at;
+      SupplementID       = supplement_id;
+      TravelUUID         = root_uuid;
     }
 
   //Validations
   validation validateSupplimentId on save { create; field SupplementId; }
 
-//Determinations
+  //Determinations
   determination recalTotalPrice on modify { create; update; field Price; }
 
-//Side Effeets
+  //Side Effeets
   side effects { field Price affects field _Travel.TotalPrice; }
 
 
