@@ -13,7 +13,7 @@ ENDCLASS.
 
 
 
-CLASS zcl_insert_data_d IMPLEMENTATION.
+CLASS ZCL_INSERT_DATA_D IMPLEMENTATION.
 
 
   METHOD if_oo_adt_classrun~main.
@@ -29,6 +29,7 @@ CLASS zcl_insert_data_d IMPLEMENTATION.
     out->write( 'Data Inserted in to Tables' ).
 
   ENDMETHOD.
+
 
   METHOD ausp_validation.
 **&---------------------------------------------------------------------*
